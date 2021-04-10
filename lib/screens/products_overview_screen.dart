@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:shop_app/providers/cart.dart';
+import 'package:shop_app/screens/cart_screen.dart';
+import 'package:shop_app/widgets/badge.dart';
+import 'package:shop_app/widgets/main_drawer.dart';
 
 import 'package:shop_app/widgets/products_grid.dart';
 
@@ -16,12 +21,17 @@ class _ProductOverviewScreenState extends State<ProductOverviewScreen> {
   var _showFav = false;
   @override
   Widget build(BuildContext context) {
-    
-
     return Scaffold(
       appBar: AppBar(
         title: Text('Products'),
         actions: [
+          GestureDetector(
+            onTap: () => Navigator.of(context).pushNamed(CartScreen.route),
+            child: Consumer<Cart>(
+                builder: (_, cart, child) =>
+                    Badge(child: child, value: cart.itemsLength().toString()),
+                child: Icon(Icons.shopping_cart)),
+          ),
           PopupMenuButton(
             icon: Icon(Icons.more_vert),
             itemBuilder: (ctx) => [
@@ -43,6 +53,7 @@ class _ProductOverviewScreenState extends State<ProductOverviewScreen> {
           )
         ],
       ),
+      drawer: MainDrawer(),
       body: ProductsGrid(_showFav),
     );
   }
