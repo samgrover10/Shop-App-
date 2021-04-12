@@ -6,9 +6,11 @@ import 'package:shop_app/widgets/cart_item.dart';
 
 class CartScreen extends StatelessWidget {
   static const route = '/cart';
+  var _isLoading = false;
   @override
   Widget build(BuildContext context) {
     final cart = Provider.of<Cart>(context);
+    final scaffold = ScaffoldMessenger.of(context);
     return Scaffold(
       appBar: AppBar(title: Text('Your Cart')),
       body: Column(
@@ -27,23 +29,14 @@ class CartScreen extends StatelessWidget {
                   Spacer(),
                   Chip(
                     label: Text(
-                      '\$${cart.totalAmount()}',
+                      '\$${cart.totalAmount().toStringAsFixed(2)}',
                       style: TextStyle(
                           color:
                               Theme.of(context).primaryTextTheme.title.color),
                     ),
                     backgroundColor: Theme.of(context).primaryColor,
                   ),
-                  TextButton(
-                      onPressed: () {
-                        Provider.of<Orders>(context,listen: false).addOrder(
-                            cart.totalAmount(), cart.items.values.toList());
-                            cart.clear();
-                      },
-                      child: Text(
-                        'Order now',
-                        style: TextStyle(color: Theme.of(context).primaryColor),
-                      ))
+                  OrderButton(cart: cart, scaffold: scaffold)
                 ],
               ),
             ),
@@ -66,5 +59,63 @@ class CartScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+class OrderButton extends StatefulWidget {
+  const OrderButton({
+    Key key,
+    @required this.cart,
+    @required this.scaffold,
+  }) : super(key: key);
+
+  final Cart cart;
+  final ScaffoldMessengerState scaffold;
+
+  @override
+  _OrderButtonState createState() => _OrderButtonState();
+}
+
+class _OrderButtonState extends State<OrderButton> {
+  var _isLoading = false;
+  @override
+  Widget build(BuildContext context) {
+    return _isLoading
+        ? Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Center(
+              child: CircularProgressIndicator(),
+            ),
+        )
+        : TextButton(
+            onPressed: (widget.cart.totalAmount() <= 0)
+                ? null
+                : () async {
+                    setState(() {
+                      _isLoading = true;
+                    });
+                    try {
+                      await Provider.of<Orders>(context, listen: false)
+                          .addOrder(widget.cart.totalAmount(),
+                              widget.cart.items.values.toList());
+                      widget.cart.clear();
+                    } catch (e) {
+                      // print(e);
+                      widget.scaffold.hideCurrentSnackBar();
+                      widget.scaffold.showSnackBar(
+                          SnackBar(content: Text('Cannot add order')));
+                    } finally {
+                      setState(() {
+                        _isLoading = false;
+                      });
+                    }
+                  },
+            child: Text(
+              'Order now',
+              style: TextStyle(
+                  color: widget.cart.totalAmount() <= 0
+                      ? Colors.grey
+                      : Theme.of(context).primaryColor),
+            ));
   }
 }

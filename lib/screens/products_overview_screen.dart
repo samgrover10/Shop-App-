@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shop_app/providers/cart.dart';
+import 'package:shop_app/providers/products.dart';
 import 'package:shop_app/screens/cart_screen.dart';
 import 'package:shop_app/widgets/badge.dart';
 import 'package:shop_app/widgets/main_drawer.dart';
@@ -54,7 +55,15 @@ class _ProductOverviewScreenState extends State<ProductOverviewScreen> {
         ],
       ),
       drawer: MainDrawer(),
-      body: ProductsGrid(_showFav),
-    );
+      body:FutureBuilder(future: Provider.of<Products>(context, listen: false).fetchData(),
+      builder: (ctx,snapshot){
+        if(snapshot.connectionState == ConnectionState.waiting){
+          return Center(child: CircularProgressIndicator());
+        }else if(snapshot.error!=null){
+          return Center(child: Text('Some error took place!'),);
+        }else{
+          return ProductsGrid(_showFav);
+        }
+      },));
   }
 }
