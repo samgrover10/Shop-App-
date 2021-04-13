@@ -1,5 +1,3 @@
-
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shop_app/providers/products.dart';
@@ -11,12 +9,12 @@ class UserProductScreen extends StatelessWidget {
   static const route = '/userProducts';
 
   Future<void> _refreshProducts(BuildContext context) async {
-    await Provider.of<Products>(context,listen: false).fetchData();
+    await Provider.of<Products>(context, listen: false).fetchData(true);
   }
 
   @override
   Widget build(BuildContext context) {
-    final productsData = Provider.of<Products>(context);
+    // final productsData = Provider.of<Products>(context);
     return Scaffold(
         appBar: AppBar(
           title: Text('Your products'),
@@ -28,13 +26,25 @@ class UserProductScreen extends StatelessWidget {
           ],
         ),
         drawer: MainDrawer(),
-        body: RefreshIndicator(
-          onRefresh: ()=>_refreshProducts(context),
-          child: ListView.builder(
-            itemBuilder: (ctx, i) => UserProductItem(productsData.items[i].id,
-                productsData.items[i].title, productsData.items[i].imageUrl),
-            itemCount: productsData.items.length,
-          ),
+        body: FutureBuilder(
+          future: _refreshProducts(context),
+          builder: (ctx, snapshot) =>
+              snapshot.connectionState == ConnectionState.waiting
+                  ? Center(
+                      child: CircularProgressIndicator(),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: () => _refreshProducts(context),
+                      child: Consumer<Products>(
+                        builder: (_, productsData, __) => ListView.builder(
+                          itemBuilder: (ctx, i) => UserProductItem(
+                              productsData.items[i].id,
+                              productsData.items[i].title,
+                              productsData.items[i].imageUrl),
+                          itemCount: productsData.items.length,
+                        ),
+                      ),
+                    ),
         ));
   }
 }

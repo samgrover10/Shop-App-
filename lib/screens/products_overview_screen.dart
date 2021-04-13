@@ -21,49 +21,64 @@ class ProductOverviewScreen extends StatefulWidget {
 class _ProductOverviewScreenState extends State<ProductOverviewScreen> {
   var _showFav = false;
   @override
+  void initState() {
+    // TODO: implement initState
+    print('init product overview');
+    super.initState();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    print('building screen');
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Products'),
-        actions: [
-          GestureDetector(
-            onTap: () => Navigator.of(context).pushNamed(CartScreen.route),
-            child: Consumer<Cart>(
-                builder: (_, cart, child) =>
-                    Badge(child: child, value: cart.itemsLength().toString()),
-                child: Icon(Icons.shopping_cart)),
-          ),
-          PopupMenuButton(
-            icon: Icon(Icons.more_vert),
-            itemBuilder: (ctx) => [
-              PopupMenuItem(
-                child: Text('Show favorites'),
-                value: FilterOptions.Favorites,
-              ),
-              PopupMenuItem(child: Text('Show all'), value: FilterOptions.All),
-            ],
-            onSelected: (value) {
-              setState(() {
-                if (value == FilterOptions.Favorites) {
-                  _showFav = true;
-                } else if (value == FilterOptions.All) {
-                  _showFav = false;
-                }
-              });
-            },
-          )
-        ],
-      ),
-      drawer: MainDrawer(),
-      body:FutureBuilder(future: Provider.of<Products>(context, listen: false).fetchData(),
-      builder: (ctx,snapshot){
-        if(snapshot.connectionState == ConnectionState.waiting){
-          return Center(child: CircularProgressIndicator());
-        }else if(snapshot.error!=null){
-          return Center(child: Text('Some error took place!'),);
-        }else{
-          return ProductsGrid(_showFav);
-        }
-      },));
+        appBar: AppBar(
+          title: Text('Products'),
+          actions: [
+            GestureDetector(
+              onTap: () => Navigator.of(context).pushNamed(CartScreen.route),
+              child: Consumer<Cart>(
+                  builder: (_, cart, child) =>
+                      Badge(child: child, value: cart.itemsLength().toString()),
+                  child: Icon(Icons.shopping_cart)),
+            ),
+            PopupMenuButton(
+              icon: Icon(Icons.more_vert),
+              itemBuilder: (ctx) => [
+                PopupMenuItem(
+                  child: Text('Show favorites'),
+                  value: FilterOptions.Favorites,
+                ),
+                PopupMenuItem(
+                    child: Text('Show all'), value: FilterOptions.All),
+              ],
+              onSelected: (value) {
+                setState(() {
+                  if (value == FilterOptions.Favorites) {
+                    _showFav = true;
+                  } else if (value == FilterOptions.All) {
+                    _showFav = false;
+                  }
+                });
+              },
+            )
+          ],
+        ),
+        drawer: MainDrawer(),
+        body: FutureBuilder(
+          future: Provider.of<Products>(context, listen: false).fetchData(),
+          builder: (ctx, snapshot) {
+            print('in future builder');
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return Center(child: CircularProgressIndicator());
+            } else if (snapshot.error != null) {
+              return Center(
+                child:
+                    Text('Some error took place! ${snapshot.error.toString()}'),
+              );
+            } else {
+              return ProductsGrid(_showFav);
+            }
+          },
+        ));
   }
 }

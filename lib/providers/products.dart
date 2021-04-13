@@ -40,6 +40,14 @@ class Products with ChangeNotifier {
     // ),
   ];
 
+  String _token;
+  String _userId;
+
+  void update(String token, String userId) {
+    _token = token;
+    _userId = userId;
+  }
+
   List<Product> get items {
     return [..._items];
   }
@@ -54,7 +62,7 @@ class Products with ChangeNotifier {
 
   Future<void> addProduct(Product product) async {
     Uri url = Uri.parse(
-        'https://shop-app-ddaa0-default-rtdb.firebaseio.com/products.json');
+        'https://shop-app-ddaa0-default-rtdb.firebaseio.com/products.json?auth=$_token');
     try {
       final response = await http.post(url,
           body: json.encode({
@@ -62,29 +70,40 @@ class Products with ChangeNotifier {
             'price': product.price,
             'description': product.description,
             'imageUrl': product.imageUrl,
-            'isFavorite': product.isFavorite
+            'creatorId': _userId
           }));
-      final prod = Product(
-          description: product.description,
-          imageUrl: product.imageUrl,
-          price: product.price,
-          title: product.title,
-          id: json.decode(response.body)['name']);
-      _items.add(prod);
-      notifyListeners();
+      if (json.decode(response.body)['error'] == null) {
+        final prod = Product(
+            description: product.description,
+            imageUrl: product.imageUrl,
+            price: product.price,
+            title: product.title,
+            id: json.decode(response.body)['name']);
+        _items.add(prod);
+        notifyListeners();
+      } else {
+        throw HttpException('Permission denied');
+      }
     } catch (error) {
       throw error;
     }
   }
 
-  Future<void> fetchData() async {
-    final url = Uri.parse(
-        'https://shop-app-ddaa0-default-rtdb.firebaseio.com/products.json');
+  Future<void> fetchData([bool filterByUser = false]) async {
+    final filterString =
+        filterByUser ? '&orderBy="creatorId"&equalTo="$_userId"' : '';
+    print('fetching');
+    var url = Uri.parse(
+        'https://shop-app-ddaa0-default-rtdb.firebaseio.com/products.json?auth=$_token$filterString');
     try {
       final response = await http.get(url);
       final extractedData = json.decode(response.body) as Map<String, dynamic>;
       if (extractedData == null) return;
+      url = Uri.parse(
+          'https://shop-app-ddaa0-default-rtdb.firebaseio.com/userFavorites/$_userId.json?auth=$_token');
+      final favResponse = await http.get(url);
       List<Product> loadedProds = [];
+      final favData = json.decode(favResponse.body);
       extractedData.forEach((key, value) {
         loadedProds.add(Product(
             description: value['description'],
@@ -92,7 +111,7 @@ class Products with ChangeNotifier {
             imageUrl: value['imageUrl'],
             price: value['price'],
             title: value['title'],
-            isFavorite: value['isFavorite']));
+            isFavorite: favData == null ? false : favData[key] ?? false));
       });
       _items = loadedProds;
       notifyListeners();
@@ -105,7 +124,7 @@ class Products with ChangeNotifier {
     final index = _items.indexWhere((prod) => prod.id == updatedProduct.id);
     if (index >= 0) {
       final url = Uri.parse(
-          'https://shop-app-ddaa0-default-rtdb.firebaseio.com/products/${updatedProduct.id}.json');
+          'https://shop-app-ddaa0-default-rtdb.firebaseio.com/products/${updatedProduct.id}.json?auth=$_token');
       await http.patch(url,
           body: json.encode({
             'title': updatedProduct.title,
@@ -120,7 +139,7 @@ class Products with ChangeNotifier {
 
   Future<void> deleteProduct(String id) async {
     final url = Uri.parse(
-        'https://shop-app-ddaa0-default-rtdb.firebaseio.com/products/$id.json');
+        'https://shop-app-ddaa0-default-rtdb.firebaseio.com/products/$id.json?auth=$_token');
     int existingProductIndex = _items.indexWhere((prod) => prod.id == id);
     var existingProduct = _items[existingProductIndex];
     _items.removeWhere((element) => element.id == id);

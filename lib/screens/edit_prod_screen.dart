@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shop_app/models/http_exception.dart';
 import 'package:shop_app/providers/product.dart';
 import 'package:shop_app/providers/products.dart';
 
@@ -19,6 +20,22 @@ class _EditProdScreenState extends State<EditProdScreen> {
   var _editedProduct =
       Product(description: '', id: null, imageUrl: '', price: 0, title: '');
   var initValue = {'title': '', 'description': '', 'price': '', 'imageUrl': ''};
+
+  Future<void> _showErroDialog(String message) {
+    return showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+              title: Text('An error occured!'),
+              content: Text(message),
+              actions: [
+                TextButton(
+                    onPressed: () {
+                      Navigator.of(ctx).pop();
+                    },
+                    child: Text('Ok'))
+              ],
+            ));
+  }
 
   @override
   void initState() {
@@ -74,29 +91,19 @@ class _EditProdScreenState extends State<EditProdScreen> {
       try {
         await Provider.of<Products>(context, listen: false)
             .addProduct(_editedProduct);
+      } on HttpException catch (e) {
+        await _showErroDialog(e.toString());
       } catch (error) {
-        await showDialog(
-            context: context,
-            builder: (ctx) => AlertDialog(
-                  title: Text('An error occured!'),
-                  content: Text('Something went wrong'),
-                  actions: [
-                    TextButton(
-                        onPressed: () {
-                          Navigator.of(ctx).pop();
-                        },
-                        child: Text('Ok'))
-                  ],
-                ));
+        await _showErroDialog('Something went wrong');
       }
     } else {
-     await Provider.of<Products>(context, listen: false)
+      await Provider.of<Products>(context, listen: false)
           .updateProduct(_editedProduct);
     }
-     setState(() {
-        _isLoading = false;
-      });
-      Navigator.of(context).pop();
+    setState(() {
+      _isLoading = false;
+    });
+    Navigator.of(context).pop();
   }
 
   @override
