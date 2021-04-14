@@ -10,6 +10,7 @@ import 'package:shop_app/screens/edit_prod_screen.dart';
 import 'package:shop_app/screens/orders_screen.dart';
 import 'package:shop_app/screens/product_detail_screen.dart';
 import 'package:shop_app/screens/products_overview_screen.dart';
+import 'package:shop_app/screens/splash_screen.dart';
 import 'package:shop_app/screens/user_prod_screen.dart';
 
 void main() {
@@ -25,7 +26,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProxyProvider<Auth, Products>(
           update: (_, auth, previousProd) {
             print('update in main.dart');
-            return previousProd..update(auth.token,auth.userId);
+            return previousProd..update(auth.token, auth.userId);
           },
           create: (_) {
             print('creating product provider');
@@ -33,8 +34,11 @@ class MyApp extends StatelessWidget {
           },
         ),
         ChangeNotifierProvider(create: (_) => Cart()),
-        ChangeNotifierProxyProvider<Auth,Orders>(create: (_) => Orders(),
-        update: (_,auth,previousOrders)=>previousOrders..update(auth.token,auth.userId),),
+        ChangeNotifierProxyProvider<Auth, Orders>(
+          create: (_) => Orders(),
+          update: (_, auth, previousOrders) =>
+              previousOrders..update(auth.token, auth.userId),
+        ),
       ],
       child: Consumer<Auth>(
         builder: (_, auth, __) => MaterialApp(
@@ -44,7 +48,14 @@ class MyApp extends StatelessWidget {
                 accentColor: Colors.deepOrange,
                 fontFamily: 'Lato'),
             routes: {
-              '/': (_) => auth.isAuth ? ProductOverviewScreen() : AuthScreen(),
+              '/': (_) => auth.isAuth
+                  ? ProductOverviewScreen()
+                  : FutureBuilder(
+                      future: auth.tryAutoLogin(),
+                      builder: (_, snapshot) =>
+                          snapshot.connectionState == ConnectionState.waiting
+                              ? SplashScreen()
+                              : AuthScreen()),
               ProductDetailsScreen.route: (_) => ProductDetailsScreen(),
               CartScreen.route: (_) => CartScreen(),
               OrdersScreen.route: (_) => OrdersScreen(),
